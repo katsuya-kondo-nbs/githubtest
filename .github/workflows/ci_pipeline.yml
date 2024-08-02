@@ -10,7 +10,7 @@ jobs:
       - run: echo "Hello world"
      
 #run間でのデータ共有
-data-share:
+share:
   runs-on: ubuntu-latest
   steps:
     - id: source
