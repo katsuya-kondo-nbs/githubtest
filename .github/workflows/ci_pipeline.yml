@@ -1,20 +1,21 @@
 name: ci-pipeline
 run-name: Run by @${{ github.actor }}
-on: [pull_request,push]:
+on: [pull_request,push]
 #動作確認
-job:
+jobs:
   hello:
     name: Hello world
-   runs_on: ubuntu-latest
+    runs_on: ubuntu-latest
     steps:
-     - run: echo "Hello world"
+      - run: echo "Hello world"
+     
 #run間でのデータ共有
-  data-share:
-    runs-on: ubuntu-latest
-    steps:
-      - id: source
-        run: echo "result=Hello" >> "${GITHUB_OUTPUT}"
-      - env:
-        RESULT: ${{ steps.source.output.result}}
-        run: echo :${RESULT}
+data-share:
+  runs-on: ubuntu-latest
+  steps:
+    - id: source
+      run: echo "result=Hello" >> "${GITHUB_OUTPUT}"
+    - env:
+      RESULT: ${{ steps.source.output.result}}
+      run: echo :${RESULT}
 
