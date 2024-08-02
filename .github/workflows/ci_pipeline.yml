@@ -5,7 +5,7 @@ on: [pull_request,push]
 jobs:
   hello:
     name: Hello world
-    runs_on: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - run: echo "Hello world"
      
