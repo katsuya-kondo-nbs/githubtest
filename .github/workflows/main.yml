@@ -1,0 +1,83 @@
+name: MLOps Workflow
+
+on:
+  push:
+    paths:
+      - 'path/to/lstm_model/**/*'
+
+jobs:
+  check-lstm-change:
+    name: Check for LSTM Model Changes
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check if LSTM model files have changed
+        id: check
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q 'path/to/lstm_model/'; then
+            echo "changed=true" >> $GITHUB_ENV
+          else
+            echo "changed=false" >> $GITHUB_ENV
+          fi
+
+  upload-to-s3:
+    name: Upload Source Code to S3
+    needs: check-lstm-change
+    runs-on: ubuntu-latest
+    if: needs.check-lstm-change.outputs.changed == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Upload to S3
+        run: aws s3 cp --recursive ./path/to/lstm_model s3://your-bucket-name/path/to/lstm_model
+
+  build-and-push-ecr:
+    name: Build and Push Docker Image to ECR
+    needs: upload-to-s3
+    runs-on: ubuntu-latest
+    if: needs.upload-to-s3.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG=latest
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker tag ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+
+  create-sagemaker-pipeline:
+    name: Create SageMaker Pipeline
+    needs: build-and-push-ecr
+    runs-on: ubuntu-latest
+    if: needs.build-and-push-ecr.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Create SageMaker Pipeline
+        run: python path/to/train_pipeline.py
