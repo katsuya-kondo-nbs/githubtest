@@ -2,7 +2,7 @@ name: Hello
 on:
   workflow_dispatch:
 env:
-  execution_role_arn: arn:aws:iam::764192796407:role/ads-test-executionrole
+  EXECUTION_ROLE_ARN: arn:aws:iam::764192796407:role/ads-test-executionrole
 jobs:
     hello:
       runs-on: ubuntu-latest
