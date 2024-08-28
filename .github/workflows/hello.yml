@@ -8,7 +8,9 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         #- run: echo "Hello world"
-        - run: echo execution_role_arn
+        - name: Install dependencies
+          run: |
+            pip install sagemaker  # SageMaker SDKのインストール
         - uses: actions/checkout@v4
         - name: set up python
           uses: actions/setup-python@v4
